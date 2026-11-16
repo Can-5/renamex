@@ -153,6 +153,13 @@ pub fn build_plan(rules: &RenameRules, files: &[&str]) -> Result<Vec<RenamePlanE
     Ok(plan)
 }
 
+/// Render a human-readable rename preview: one line per file, `old -> new` (ASCII arrow).
+/// Returns the same errors as [`build_plan`] (e.g. `InvalidRegex`).
+pub fn preview_report(rules: &RenameRules, files: &[&str]) -> Result<String, RenameError> {
+    let plan = build_plan(rules, files)?;
+    Ok(plan.iter().map(|e| format!("{} -> {}", e.original, e.new_name)).collect::<Vec<_>>().join("\n"))
+}
+
 /// Target names appearing more than once in the plan (case-insensitive, like most filesystems).
 pub fn detect_duplicate_newnames(plan: &[RenamePlanEntry]) -> Vec<String> {
     let mut seen = std::collections::BTreeMap::<String, usize>::new();
@@ -250,6 +257,25 @@ mod tests {
         let rules = RenameRules { pattern: "same{ext}".into(), ..Default::default() };
         let plan = build_plan(&rules, &["a.txt", "b.txt"]).unwrap();
         assert_eq!(detect_duplicate_newnames(&plan), vec!["same.txt"]);
+    }
+
+    #[test]
+    fn preview_report_lines_per_file() {
+        let rules = RenameRules { pattern: "shot-{counter}{ext}".into(), counter_start: 1, padding: 2, ..Default::default() };
+        let out = preview_report(&rules, &["a.png", "b.png"]).unwrap();
+        assert_eq!(out, "a.png -> shot-01.png\nb.png -> shot-02.png");
+    }
+
+    #[test]
+    fn preview_report_propagates_invalid_regex() {
+        let rules = RenameRules { find_regex: Some("(".into()), ..Default::default() };
+        assert!(matches!(preview_report(&rules, &["x.txt"]), Err(RenameError::InvalidRegex(_))));
+    }
+
+    #[test]
+    fn preview_report_empty_input_is_empty_string() {
+        let out = preview_report(&RenameRules::default(), &[]).unwrap();
+        assert_eq!(out, "");
     }
 
     #[test]
