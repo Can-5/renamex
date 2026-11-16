@@ -1,0 +1,14 @@
+[package]
+name = "renamex"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Batch-rename planning engine for Orbit: token patterns, regex passes, counters, dates, duplicate detection, overwrite refusal. Never touches the filesystem."
+repository = "https://github.com/Can-5/renamex"
+keywords = ["rename", "batch", "orbit"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+regex = "1"
